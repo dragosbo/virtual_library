@@ -1,0 +1,6 @@
+{
+  "name": "BookShelf Video AI: Bookstore Book Explorer",
+  "description": "Interactive virtual bookshelves detecting and showcasing all books and authors from the bookstore video, featuring summaries, author insights, and ISBN lookups.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
