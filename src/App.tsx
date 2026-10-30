@@ -12,8 +12,7 @@ import { VideoInspectorModal } from './components/VideoInspectorModal';
 import { PdfPreviewModal } from './components/PdfPreviewModal';
 import { HelpModal } from './components/HelpModal';
 import { AmazonCoverImage } from './components/AmazonCoverImage';
-import { exportBooksToPdf } from './utils/exportPdf';
-import { Video, BookOpen, Download, ExternalLink, Sparkles, FileDown, ShoppingBag, Library } from 'lucide-react';
+import { Video, BookOpen, Download, ExternalLink, Sparkles, FileDown, ShoppingBag, Library, FileText, Eye } from 'lucide-react';
 
 const DEFAULT_VIDEO_URL = 'https://youtube.com/shorts/uY5M9m1UB5k?is=zri1s1z9dZ2lIe0U';
 
@@ -90,6 +89,12 @@ export default function App() {
 
   // PDF Preview & Email Modal state
   const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
+  const [pdfInitialDoc, setPdfInitialDoc] = useState<'catalog' | 'manual'>('catalog');
+
+  const handleOpenPdf = (docType: 'catalog' | 'manual' = 'catalog') => {
+    setPdfInitialDoc(docType);
+    setIsPdfPreviewOpen(true);
+  };
 
   // Complete User Manual & Prompt History Help Modal state
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -103,6 +108,30 @@ export default function App() {
       .replace(/[‘’´`]/g, "'")
       .replace(/[“”]/g, '"')
       .trim();
+
+  // Detect whether the search query expresses an intent to view the PDF catalog or document
+  const isPdfSearchIntent = useMemo(() => {
+    const q = normalizeText(searchQuery);
+    if (!q) return false;
+    return (
+      q === 'pdf' ||
+      q === 'catalog' ||
+      q === 'document' ||
+      q === 'pdf catalog' ||
+      q === 'pdf document' ||
+      q === 'catalog pdf' ||
+      q === 'document pdf' ||
+      q === 'pdf file' ||
+      q === 'export pdf' ||
+      q === 'download pdf' ||
+      q === 'view pdf' ||
+      q === 'manual pdf' ||
+      q.includes('pdf catalog') ||
+      q.includes('pdf document') ||
+      q.includes('catalog pdf') ||
+      q.includes('document pdf')
+    );
+  }, [searchQuery]);
 
   // Filter books
   const filteredBooks = useMemo(() => {
@@ -124,6 +153,12 @@ export default function App() {
         return false;
       }
 
+      // If the user's search query is specifically a request to view the PDF document / catalog,
+      // do not filter all books out to an empty list! Keep the catalog titles visible.
+      if (isPdfSearchIntent) {
+        return true;
+      }
+
       // Search query filter (matches title, author, summary, or ISBN with smart quote normalization)
       if (q) {
         const matchTitle = normalizeText(book.title).includes(q);
@@ -138,7 +173,7 @@ export default function App() {
 
       return true;
     });
-  }, [scopedBooks, searchQuery, selectedCategory, selectedGenre, selectedAuthor]);
+  }, [scopedBooks, searchQuery, selectedCategory, selectedGenre, selectedAuthor, isPdfSearchIntent]);
 
   // Group filtered books by shelves for the shelf view
   const shelvesWithFilteredBooks = useMemo(() => {
@@ -192,7 +227,7 @@ export default function App() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onOpenVideoInspector={() => setIsVideoInspectorOpen(true)}
-        onDownloadPdf={handleDownloadPdf}
+        onDownloadPdf={() => handleOpenPdf('catalog')}
         onOpenHelp={() => setIsHelpOpen(true)}
         originalVideoUrl={originalVideoUrl}
         totalBooks={allBooks.length}
@@ -214,7 +249,8 @@ export default function App() {
               selectedGenre={selectedGenre}
               onGenreChange={setSelectedGenre}
               totalFiltered={filteredBooks.length}
-              onDownloadPdf={handleDownloadPdf}
+              onDownloadPdf={() => handleOpenPdf('catalog')}
+              onOpenPdfModal={handleOpenPdf}
               shelfScope={shelfScope}
               onShelfScopeChange={setShelfScope}
               selectedAuthor={selectedAuthor}
@@ -224,6 +260,50 @@ export default function App() {
               totalImaginaryBooks={IMAGINARY_BOOKS.length}
               onOpenHelp={() => setIsHelpOpen(true)}
             />
+
+            {/* Prominent PDF Document Display Card when user types "pdf catalog" / "pdf document" */}
+            {isPdfSearchIntent && (
+              <div className="mb-6 p-4 sm:p-5 rounded-xl bg-gradient-to-r from-emerald-950/80 via-[#0d1829] to-[#0a0a14] border border-emerald-500/40 shadow-[0_0_30px_rgba(16,185,129,0.25)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in duration-200">
+                <div className="flex items-center gap-3.5">
+                  <div className="p-3 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0 shadow-sm">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        PDF Format Requested
+                      </span>
+                      <span className="text-xs text-gray-400 font-mono">Query: "{searchQuery}"</span>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-serif font-bold text-white mt-0.5">
+                      Display Document in Authentic PDF Format
+                    </h3>
+                    <p className="text-xs text-gray-300 max-w-xl mt-0.5 font-sans">
+                      The complete bookstore inventory of {allBooks.length} books with authors, recent edition publication years, verified ISBNs, and orientative prices is formatted and ready for viewing.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+                  <button
+                    id="search-card-open-pdf-catalog-btn"
+                    onClick={() => handleOpenPdf('catalog')}
+                    className="px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(16,185,129,0.35)] flex items-center gap-2 cursor-pointer"
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span>Display PDF Catalog</span>
+                  </button>
+                  <button
+                    id="search-card-open-pdf-manual-btn"
+                    onClick={() => handleOpenPdf('manual')}
+                    className="px-3.5 py-2.5 rounded-lg bg-[#151522] hover:bg-[#202035] text-amber-300 border border-amber-500/30 font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                    <span>User Manual PDF</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Shelves View vs Grid View */}
             {viewMode === 'shelves' ? (
@@ -447,16 +527,16 @@ export default function App() {
           <div className="p-5 border-t border-[#ffffff10] bg-[#050507] space-y-2.5">
             <button
               id="sidebar-download-pdf-btn"
-              onClick={handleDownloadPdf}
-              className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold uppercase tracking-[0.15em] rounded transition-colors shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center justify-center gap-2"
+              onClick={() => handleOpenPdf('catalog')}
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold uppercase tracking-[0.15em] rounded transition-colors shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center justify-center gap-2 cursor-pointer"
             >
               <FileDown className="w-4 h-4" />
-              <span>Download Catalog (PDF)</span>
+              <span>Display Catalog (PDF)</span>
             </button>
 
             <button
               onClick={handleExportDataset}
-              className="w-full py-2 bg-[#121218] hover:bg-[#1a1a24] text-gray-300 hover:text-white text-[10px] font-mono uppercase tracking-wider rounded border border-[#ffffff10] transition-colors flex items-center justify-center gap-1.5"
+              className="w-full py-2 bg-[#121218] hover:bg-[#1a1a24] text-gray-300 hover:text-white text-[10px] font-mono uppercase tracking-wider rounded border border-[#ffffff10] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Download className="w-3 h-3 text-gray-400" />
               <span>Export Raw JSON</span>
@@ -486,7 +566,7 @@ export default function App() {
         onSelectBook={handleSelectBook}
         originalVideoUrl={originalVideoUrl}
         onUpdateVideoUrl={handleUpdateVideoUrl}
-        onOpenPdfPreview={() => setIsPdfPreviewOpen(true)}
+        onOpenPdfPreview={() => handleOpenPdf('catalog')}
       />
 
       {/* PDF Document Preview & Email Modal */}
@@ -496,10 +576,11 @@ export default function App() {
         books={filteredBooks.length > 0 ? filteredBooks : allBooks}
         title="BOOKSHELF AI — COMPLETE CATALOG & CURATED SHELVES"
         subtitle={
-          shelfScope !== 'all' || selectedCategory !== 'all' || selectedAuthor !== 'All' || selectedGenre !== 'All' || searchQuery.trim().length > 0
+          shelfScope !== 'all' || selectedCategory !== 'all' || selectedAuthor !== 'All' || selectedGenre !== 'All' || (searchQuery.trim().length > 0 && !isPdfSearchIntent)
             ? `Filtered subset of ${filteredBooks.length} books (${shelfScope === 'imaginary' ? 'Curated Imaginary' : shelfScope === 'video' ? 'Video Scanned' : 'Combined'})`
             : `Complete inventory of ${allBooks.length} books across 15 shelves (9 video bays + 6 curated imaginary shelves)`
         }
+        initialDoc={pdfInitialDoc}
       />
 
       {/* Complete User Manual, Prompt Construction History & Downloadable Guide Modal */}
@@ -508,6 +589,7 @@ export default function App() {
         onClose={() => setIsHelpOpen(false)}
         onSelectVideoScope={() => setShelfScope('video')}
         onSelectImaginaryScope={() => setShelfScope('imaginary')}
+        onOpenPdfManual={() => handleOpenPdf('manual')}
       />
     </div>
   );

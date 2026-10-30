@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, FileDown, BookOpen, Sparkles, Video, HelpCircle, CheckCircle2, ChevronRight, Layers, LayoutGrid, Search, ExternalLink, Library, ShieldCheck, Compass } from 'lucide-react';
+import { X, FileDown, BookOpen, Sparkles, Video, HelpCircle, CheckCircle2, ChevronRight, Layers, LayoutGrid, Search, ExternalLink, Library, ShieldCheck, Compass, Eye } from 'lucide-react';
 import { exportHelpManualToPdf } from '../utils/exportHelpPdf';
 
 interface HelpModalProps {
@@ -7,6 +7,7 @@ interface HelpModalProps {
   onClose: () => void;
   onSelectVideoScope?: () => void;
   onSelectImaginaryScope?: () => void;
+  onOpenPdfManual?: () => void;
 }
 
 export const HelpModal: React.FC<HelpModalProps> = ({
@@ -14,6 +15,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
   onClose,
   onSelectVideoScope,
   onSelectImaginaryScope,
+  onOpenPdfManual,
 }) => {
   const [activeTab, setActiveTab] = useState<'creation' | 'distinguish' | 'capabilities'>('creation');
   const [isExporting, setIsExporting] = useState(false);
@@ -56,17 +58,33 @@ export const HelpModal: React.FC<HelpModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {onOpenPdfManual && (
+              <button
+                id="view-help-manual-pdf-format-btn"
+                onClick={() => {
+                  onClose();
+                  onOpenPdfManual();
+                }}
+                className="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-wider transition-all shadow-[0_0_12px_rgba(37,99,235,0.3)] flex items-center gap-1.5 cursor-pointer shrink-0"
+                title="Display manual in authentic PDF format on screen"
+              >
+                <Eye className="w-4 h-4" />
+                <span className="hidden sm:inline">View in PDF Format</span>
+                <span className="sm:hidden">View PDF</span>
+              </button>
+            )}
+
             {/* Download PDF Button */}
             <button
               id="download-help-manual-pdf-btn"
               onClick={handleDownloadPdf}
               disabled={isExporting}
-              className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center gap-2 cursor-pointer shrink-0 disabled:opacity-50"
+              className="px-3.5 py-2 rounded-lg bg-[#151522] hover:bg-[#202035] text-emerald-300 border border-emerald-500/40 text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer shrink-0 disabled:opacity-50"
               title="Download this complete guide as a high-resolution PDF document"
             >
-              <FileDown className="w-4 h-4" />
-              <span className="hidden sm:inline">{isExporting ? 'Generating...' : 'Download Manual (PDF)'}</span>
-              <span className="sm:hidden">PDF</span>
+              <FileDown className="w-4 h-4 text-emerald-400" />
+              <span className="hidden sm:inline">{isExporting ? 'Generating...' : 'Save .PDF'}</span>
+              <span className="sm:hidden">Save</span>
             </button>
 
             <button

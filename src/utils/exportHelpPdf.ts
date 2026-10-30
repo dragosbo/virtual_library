@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-export function exportHelpManualToPdf() {
+export function buildHelpManualPdfDoc(): { doc: jsPDF; fileName: string; blob: Blob; blobUrl: string } {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -259,6 +259,14 @@ export function exportHelpManualToPdf() {
   doc.setPage(2);
   addFooter(2, 2);
 
-  // Save / download
-  doc.save('BookShelf-AI-User-Manual-and-Blueprint.pdf');
+  const fileName = 'BookShelf-AI-User-Manual-and-Blueprint.pdf';
+  const blob = doc.output('blob');
+  const blobUrl = URL.createObjectURL(blob);
+
+  return { doc, fileName, blob, blobUrl };
+}
+
+export function exportHelpManualToPdf() {
+  const { doc, fileName } = buildHelpManualPdfDoc();
+  doc.save(fileName);
 }

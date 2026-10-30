@@ -1,5 +1,5 @@
-import React from 'react';
-import { Search, X, Filter, FileDown, Sparkles, Video, Library, HelpCircle } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Search, X, Filter, FileDown, Sparkles, Video, Library, HelpCircle, FileText, Eye } from 'lucide-react';
 import { ShelfScope } from '../types';
 
 interface FilterBarProps {
@@ -11,6 +11,7 @@ interface FilterBarProps {
   onGenreChange: (genre: string) => void;
   totalFiltered: number;
   onDownloadPdf?: () => void;
+  onOpenPdfModal?: (doc?: 'catalog' | 'manual') => void;
   shelfScope: ShelfScope;
   onShelfScopeChange: (scope: ShelfScope) => void;
   selectedAuthor: string;
@@ -30,6 +31,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   onGenreChange,
   totalFiltered,
   onDownloadPdf,
+  onOpenPdfModal,
   shelfScope,
   onShelfScopeChange,
   selectedAuthor,
@@ -80,6 +82,43 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     'Mythology',
     'Satire',
   ];
+
+  // Detect whether the query is asking to see the PDF catalog or document
+  const isPdfSearch = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return false;
+    return (
+      q === 'pdf' ||
+      q === 'catalog' ||
+      q === 'document' ||
+      q === 'pdf catalog' ||
+      q === 'pdf document' ||
+      q === 'catalog pdf' ||
+      q === 'document pdf' ||
+      q === 'pdf file' ||
+      q === 'export pdf' ||
+      q === 'download pdf' ||
+      q.includes('pdf catalog') ||
+      q.includes('pdf document') ||
+      q.includes('catalog pdf') ||
+      q.includes('document pdf')
+    );
+  }, [searchQuery]);
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const q = searchQuery.toLowerCase().trim();
+      if (
+        isPdfSearch ||
+        q.includes('pdf') ||
+        q.includes('catalog') ||
+        q.includes('document')
+      ) {
+        e.preventDefault();
+        onOpenPdfModal?.('catalog');
+      }
+    }
+  };
 
   return (
     <div className="bg-[#0a0a0f] border border-[#ffffff10] rounded-xl p-4 space-y-3.5 mb-6 shadow-[0_10px_25px_rgba(0,0,0,0.5)]">
@@ -181,17 +220,35 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search by title, author, or ISBN identifier..."
-            className="w-full pl-10 pr-9 py-2 bg-[#050507] border border-[#ffffff10] rounded text-xs sm:text-sm text-[#e0e0e0] placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+            onKeyDown={handleSearchKeyDown}
+            placeholder='Search titles, authors, or type "pdf catalog" / "pdf document"...'
+            className="w-full pl-10 pr-24 py-2 bg-[#050507] border border-[#ffffff10] rounded text-xs sm:text-sm text-[#e0e0e0] placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
           />
-          {searchQuery && (
-            <button
-              onClick={() => onSearchChange('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-500 hover:text-white"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            {isPdfSearch && onOpenPdfModal && (
+              <button
+                type="button"
+                id="search-inline-open-pdf-btn"
+                onClick={() => onOpenPdfModal('catalog')}
+                className="px-2 py-0.5 rounded bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/50 text-[10.5px] font-mono font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                title="Display catalog in PDF format now"
+              >
+                <Eye className="w-3 h-3 text-emerald-400" />
+                <span>Open PDF</span>
+              </button>
+            )}
+
+            {searchQuery && (
+              <button
+                onClick={() => onSearchChange('')}
+                className="p-1 rounded text-gray-500 hover:text-white"
+                title="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Shelf Category & Author Dropdowns / Select & PDF export */}
@@ -242,6 +299,40 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           )}
         </div>
       </div>
+
+      {/* PDF Search Intent Alert Banner */}
+      {isPdfSearch && onOpenPdfModal && (
+        <div className="p-3 rounded-lg bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between gap-3 text-xs flex-wrap animate-in fade-in duration-200">
+          <div className="flex items-center gap-2.5 text-emerald-300">
+            <FileText className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div>
+              <span className="font-bold">PDF Format Match: </span>
+              <span className="text-emerald-200/90">
+                You typed "{searchQuery}". Full catalog document is formatted and ready for viewing.
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              id="filter-banner-open-catalog-pdf-btn"
+              onClick={() => onOpenPdfModal('catalog')}
+              className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Display PDF Catalog</span>
+            </button>
+            <button
+              type="button"
+              id="filter-banner-open-manual-pdf-btn"
+              onClick={() => onOpenPdfModal('manual')}
+              className="px-3 py-1.5 rounded bg-[#151522] hover:bg-[#202035] text-amber-300 border border-amber-500/30 text-xs font-bold transition-colors cursor-pointer"
+            >
+              User Manual PDF
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Genre Filter Pills */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
